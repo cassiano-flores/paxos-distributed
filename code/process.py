@@ -1,5 +1,6 @@
 import multiprocessing
 from threading import Thread
+from tcp_connection import TCPConnection
 
 
 class Process(Thread):
@@ -8,6 +9,7 @@ class Process(Thread):
         self.inbox = multiprocessing.Manager().Queue()
         self.env = env
         self.id = id
+        self.tcp_conn = None
 
     def run(self):
         try:
@@ -17,10 +19,19 @@ class Process(Thread):
             print("Exiting..")
 
     def getNextMessage(self):
-        return self.inbox.get()
+        if self.tcp_conn:
+            return self.tcp_conn.receive()
+        else:
+            return self.inbox.get()
 
     def sendMessage(self, dst, msg):
-        self.env.sendMessage(dst, msg)
+        if self.tcp_conn:
+            self.tcp_conn.send(dst, msg)
+        else:
+            self.env.sendMessage(dst, msg)
 
     def deliver(self, msg):
-        self.inbox.put(msg)
+        if self.tcp_conn:
+            self.tcp_conn.send(msg)
+        else:
+            self.inbox.put(msg)

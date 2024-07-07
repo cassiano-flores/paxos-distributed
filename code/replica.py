@@ -2,18 +2,20 @@ from process import Process
 from message import ProposeMessage, DecisionMessage, RequestMessage
 from utils import *
 from bank import Bank
+from tcp_connection import TCPConnection
 
 
 class Replica(Process):
-    def __init__(self, env, id, config):
+    def __init__(self, env, id, config, address, port):
         Process.__init__(self, env, id)
         self.slot_in = self.slot_out = 1
         self.proposals = {}
         self.decisions = {}
         self.requests = []
         self.config = config
-        self.env.addProc(self)
         self.bank = Bank()
+        self.tcp_conn = TCPConnection(address, port)
+        self.env.addProc(self, address, port)
 
     def propose(self):
         while len(self.requests) != 0 and self.slot_in < self.slot_out + WINDOW:
@@ -38,7 +40,6 @@ class Replica(Process):
             self.slot_out += 1
             return
 
-        # Process bank commands here
         op_parts = cmd.op.split()
         print("\n#------------------------------------------------------#")
         print("            " + str(self.id).upper())
@@ -77,12 +78,10 @@ class Replica(Process):
     def body(self):
         print("Here I am: " + self.id)
         while True:
-            msg = self.getNextMessage()
+            msg = self.tcp_conn.receive()
             if isinstance(msg, RequestMessage):
-                # print("%s received RequestMessage: %s" % (str(self.id), str(msg.command)))
                 self.requests.append(msg.command)
             elif isinstance(msg, DecisionMessage):
-                # print("%s received DecisionMessage: %s" % (str(self.id), str(msg.command)))
                 self.decisions[msg.slot_number] = msg.command
                 while self.slot_out in self.decisions:
                     if self.slot_out in self.proposals:

@@ -4,12 +4,18 @@ from leader import Leader
 from message import RequestMessage
 from replica import Replica
 from utils import *
+from tcp_connection import TCPConnection
 
 NACCEPTORS = 3
 NREPLICAS = 2
 NLEADERS = 2
-NREQUESTS = 10
-NCONFIGS = 2
+
+# addresses and ports
+ADDRESSES = {
+    "replica": [("127.0.0.1", 5001), ("127.0.0.1", 5002)],
+    "acceptor": [("127.0.0.1", 5003), ("127.0.0.1", 5004), ("127.0.0.1", 5005)],
+    "leader": [("127.0.0.1", 5006), ("127.0.0.1", 5007)]
+}
 
 
 class Env:
@@ -20,29 +26,44 @@ class Env:
         if dst in self.procs:
             self.procs[dst].deliver(msg)
 
-    def addProc(self, proc):
+    def addProc(self, proc, address, port):
         self.procs[proc.id] = proc
-        proc.start()
+        proc.tcp_conn = TCPConnection(address, port)
 
     def removeProc(self, pid):
         del self.procs[pid]
 
     def run(self):
         initialconfig = Config([], [], [])
-        c = 0
+        processes = []
 
-        for i in range(NREPLICAS):
+        # Start replicas
+        for i, (address, port) in enumerate(ADDRESSES["replica"]):
             pid = "replica %d" % i
-            Replica(self, pid, initialconfig)
+            proc = Replica(self, pid, initialconfig, address, port)
             initialconfig.replicas.append(pid)
-        for i in range(NACCEPTORS):
-            pid = "acceptor %d.%d" % (c, i)
-            Acceptor(self, pid)
+            self.addProc(proc, address, port)
+            processes.append(proc)
+
+        # Start acceptors
+        for i, (address, port) in enumerate(ADDRESSES["acceptor"]):
+            pid = "acceptor %d" % i
+            proc = Acceptor(self, pid, address, port)
             initialconfig.acceptors.append(pid)
-        for i in range(NLEADERS):
-            pid = "leader %d.%d" % (c, i)
-            Leader(self, pid, initialconfig)
+            self.addProc(proc, address, port)
+            processes.append(proc)
+
+        # Start leaders
+        for i, (address, port) in enumerate(ADDRESSES["leader"]):
+            pid = "leader %d" % i
+            proc = Leader(self, pid, initialconfig, address, port)
             initialconfig.leaders.append(pid)
+            self.addProc(proc, address, port)
+            processes.append(proc)
+
+        # Start all processes
+        for proc in processes:
+            proc.start()
 
         time.sleep(1)
         client = "client"
@@ -55,7 +76,7 @@ class Env:
             print("3. transfer (from_account, to_account, amount)")
             print("4. balance  (account)")
             print("#------------------------------------------------------#\n")
-            choice = input("Choose an option: ")
+            choice = int(input("Choose an option: "))
             if choice == 1:
                 account = input("Enter account: ")
                 amount = input("Enter amount: ")
