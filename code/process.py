@@ -1,11 +1,8 @@
 import multiprocessing
 from threading import Thread
 
+
 class Process(Thread):
-    """
-    A process is a thread with a queue of incoming messages, and an
-    "environment" that keeps track of all processes and queues.
-    """
     def __init__(self, env, id):
         super(Process, self).__init__()
         self.inbox = multiprocessing.Manager().Queue()
@@ -17,7 +14,7 @@ class Process(Thread):
             self.body()
             self.env.removeProc(self.id)
         except EOFError:
-            print "Exiting.."
+            print("Exiting..")
 
     def getNextMessage(self):
         return self.inbox.get()
