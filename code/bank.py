@@ -21,6 +21,7 @@ class Bank:
 
     def get_account(self, account_id):
         if account_id not in self.accounts:
+            print(f"Account doesn't exist. Creating account {account_id}...")
             self.accounts[account_id] = Account()
         return self.accounts[account_id]
 

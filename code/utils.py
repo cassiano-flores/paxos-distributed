@@ -25,7 +25,6 @@ class Command(namedtuple('Command', ['client',
                                      'req_id',
                                      'op'])):
     __slots__ = ()
-
     def __str__(self):
         return "Command(%s,%s,%s)" % (str(self.client),
                                       str(self.req_id),

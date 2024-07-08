@@ -1,4 +1,7 @@
-import os, signal, sys, time
+import os
+import signal
+import sys
+import time
 from acceptor import Acceptor
 from leader import Leader
 from message import RequestMessage
@@ -80,23 +83,24 @@ class Env:
             if choice == 1:
                 account = input("Enter account: ")
                 amount = input("Enter amount: ")
-                cmd = Command(client, req_id, "deposit %s %s" % (str(account), str(amount)))
+                cmd = Command(client, req_id, "deposit %s %s" % (account, amount))
             elif choice == 2:
                 account = input("Enter account: ")
                 amount = input("Enter amount: ")
-                cmd = Command(client, req_id, "withdraw %s %s" % (str(account), str(amount)))
+                cmd = Command(client, req_id, "withdraw %s %s" % (account, amount))
             elif choice == 3:
                 from_account = input("Enter from account: ")
                 to_account = input("Enter to account: ")
                 amount = input("Enter amount: ")
-                cmd = Command(client, req_id, "transfer %s %s %s" % (str(from_account), str(to_account), str(amount)))
+                cmd = Command(client, req_id, "transfer %s %s %s" % (from_account, to_account, amount))
             elif choice == 4:
                 account = input("Enter account: ")
-                cmd = Command(client, req_id, "balance %s" % str(account))
+                cmd = Command(client, req_id, "balance %s" % account)
             else:
                 print("Invalid choice")
                 continue
 
+            print(initialconfig.replicas)
             for r in initialconfig.replicas:
                 self.sendMessage(r, RequestMessage(client, cmd))
                 time.sleep(1)
